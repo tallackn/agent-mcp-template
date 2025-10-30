@@ -1,35 +1,36 @@
-name: Deploy MCP server to AWS
-
+name: Deploy MCP server to AWS Lambda
 on:
   push:
     branches: [ main ]
-
 jobs:
   deploy:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
         uses: actions/checkout@v3
-
       - name: Set up Python
         uses: actions/setup-python@v4
         with:
           python-version: '3.10'
-
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install -r requirements.txt
-
+          pip install -r requirements.txt -t package
       - name: Package application
-        run: echo "Packaging application for deployment"
-        # Add your packaging commands here, for example zipping the app or building a Docker image
-
-      - name: Deploy to AWS
+        run: |
+          cp server.py package/
+          cd package
+          zip -r ../function.zip .
+      - name: Deploy to AWS Lambda
         env:
           AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
           AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           AWS_DEFAULT_REGION: ${{ secrets.AWS_DEFAULT_REGION }}
+          FUNCTION_NAME: ${{ secrets.LAMBDA_FUNCTION_NAME }}
+          ROLE_ARN: ${{ secrets.LAMBDA_ROLE_ARN }}
         run: |
-          echo "Deploying to AWS..."
-          # Add AWS CLI or other deployment commands here
+          if aws lambda get-function --function-name "$FUNCTION_NAME"; then
+            aws lambda update-function-code --function-name "$FUNCTION_NAME" --zip-file fileb://function.zip
+          else
+            aws lambda create-function --function-name "$FUNCTION_NAME" --runtime python3.11 --handler server.handler --zip-file fileb://function.zip --role "$ROLE_ARN"
+          fi
