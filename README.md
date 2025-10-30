@@ -16,3 +16,5 @@ This repository contains a generic Python template for an AgentKit Model Context
 ## Notes  
 - The weather API used here (Open Meteo) does not require an API key.  
 - For production use you should secure the MCP endpoint with a bearer token and handle error cases.
+
+Trigger deployment
