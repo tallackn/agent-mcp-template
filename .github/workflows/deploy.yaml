@@ -44,3 +44,18 @@ jobs:
           else
             aws lambda create-function --function-name "$FUNCTION_NAME" --runtime python3.11 --handler server.handler --zip-file fileb://function.zip --role "$ROLE_ARN" --region "$AWS_DEFAULT_REGION"
           fi
+
+      - name: Create or update Lambda Function URL
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          AWS_DEFAULT_REGION: ${{ secrets.AWS_DEFAULT_REGION }}
+          FUNCTION_NAME: ${{ secrets.LAMBDA_FUNCTION_NAME }}
+        run: |
+          if aws lambda get-function-url-config --function-name "$FUNCTION_NAME" --region "$AWS_DEFAULT_REGION" >/dev/null 2>&1; then
+            echo "Function URL already exists; leaving it unchanged."
+          else
+            aws lambda create-function-url-config --function-name "$FUNCTION_NAME" --auth-type NONE --region "$AWS_DEFAULT_REGION"
+            echo "Function URL created."
+          fi
+          aws lambda get-function-url-config --function-name "$FUNCTION_NAME" --region "$AWS_DEFAULT_REGION" --query FunctionUrl --output text
