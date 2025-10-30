@@ -1,9 +1,29 @@
 from fastapi import FastAPI
 import httpx
-from typing import Dict
+from typing import Dict, Any
 from mangum import Mangum
 
 app = FastAPI()
+
+@app.get("/tools")
+async def list_tools() -> Dict[str, Any]:
+    """Return tool metadata for MCP server."""
+    return {
+        "tools": [
+            {
+                "name": "get_forecast",
+                "description": "Fetch current weather and hourly temperature for a given latitude and longitude using Open Meteo API.",
+                "parameters": {
+                    "type": "object",
+                    "properties": {
+                        "lat": {"type": "number", "description": "Latitude"},
+                        "lon": {"type": "number", "description": "Longitude"},
+                    },
+                    "required": ["lat", "lon"],
+                },
+            }
+        ]
+    }
 
 @app.get("/get_forecast")
 async def get_forecast(lat: float, lon: float) -> Dict:
@@ -17,7 +37,6 @@ async def get_forecast(lat: float, lon: float) -> Dict:
         response.raise_for_status()
         data = response.json()
 
-    # Build a simplified response for MCP consumption
     current = data.get("current", {})
     hourly = data.get("hourly", {})
     result = {
